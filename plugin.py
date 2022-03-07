@@ -1355,6 +1355,7 @@ def start_web_server(self, webserver_port, webserver_homefolder):
     self.log.logging("Plugin", "Status", "Start Web Server connection")
     
     if "UIWebSocket" in self.pluginconf.pluginConf and self.pluginconf.pluginConf[ "UIWebSocket"]:
+        self.log.logging("Plugin", "Status", "Start Web Server connection WebSocket")
         self.uiwebsocket = UIWebSocket()
     self.webserver = WebServer(
         self.zigbee_communitation,
