@@ -124,6 +124,7 @@ from Modules.zigateCommands import (zigate_erase_eeprom,
 from Modules.zigateConsts import CERTIFICATION, HEARTBEAT, MAX_FOR_ZIGATE_BUZY
 from Zigbee.zdpCommands import zdp_get_permit_joint_status
 from Modules.zigateCommands import zigate_set_mode
+from Classes.UIWebSocket.webSocket import UIWebSocket
 
 
 #from zigpy_zigate.config import CONF_DEVICE, CONF_DEVICE_PATH, CONFIG_SCHEMA, SCHEMA_DEVICE
@@ -167,6 +168,7 @@ class BasePlugin:
         self.statistics = None
         self.iaszonemgt = None  # Object to manage IAS Zone
         self.webserver = None
+        self.uiwebsocket = None
         self.transport = None  # USB or Wifi
         self.log = None
         # self._ReqRcv = bytearray()
@@ -1351,6 +1353,9 @@ def start_OTAManagement(self, homefolder):
 def start_web_server(self, webserver_port, webserver_homefolder):
 
     self.log.logging("Plugin", "Status", "Start Web Server connection")
+    
+    if "UIWebSocket" in self.pluginconf.pluginConf and self.pluginconf.pluginConf[ "UIWebSocket"]:
+        self.uiwebsocket = UIWebSocket()
     self.webserver = WebServer(
         self.zigbee_communitation,
         self.ControllerData,
