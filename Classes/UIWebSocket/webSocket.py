@@ -29,7 +29,7 @@ class UIWebSocket(object):
 
 def async_uiwebsocket_loop( self ):
 
-    start_server = websockets.serve(handler, host=None, port=9441)
+    start_server = websockets.serve(handler, host=None, port=8441)
 
     while self.websocket_running:
         asyncio.sleep( 1.0)
