@@ -643,6 +643,8 @@ class BasePlugin:
             self.log.logging("Plugin", "Log", "onStop calling (4) WebServer off")
         if self.webserver:
             self.webserver.onStop()
+        if self.uiwebsocket:
+            self.uiwebsocket.stop_websocket_thread()
         if self.log:
             self.log.logging("Plugin", "Log", "onStop called (4) WebServer off")
         if self.log:
