@@ -4,6 +4,7 @@ import websockets
 import Domoticz
 from threading import Thread
 import logging
+import json
 
 class UIWebSocket(object):
     
@@ -51,6 +52,8 @@ async def handler(websocket, path):
     
     Domoticz.Log("websocket_thread - receive %s" %data)
     # Send a reply
-    reply = f"Data receive as:  {data}!"
-    await websocket.send(reply)
-
+    reply = '{"Data receive as":  {data}}'
+    await websocket.send(json.dumps(reply))
+    await websocket.send(json.dumps(reply))
+    await websocket.send(json.dumps(reply))
+    await websocket.send(json.dumps(reply))
