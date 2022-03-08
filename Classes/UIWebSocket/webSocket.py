@@ -34,7 +34,7 @@ async def async_uiwebsocket_loop( self ):
     Domoticz.Log("websocket_thread - create socket")
     logger = logging.getLogger('websockets')
     logger.setLevel(logging.DEBUG)
-    self.webSocket = await websockets.serve(handler, host="0.0.0.0", port=8441)
+    self.webSocket = await websockets.serve(handler, host=None, port=8441)
     Domoticz.Log("websocket_thread - create socket %s" %str(self.webSocket))
 
     while self.websocket_running:
