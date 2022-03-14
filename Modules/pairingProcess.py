@@ -22,7 +22,7 @@ from Modules.bindings import bindDevice, reWebBind_Clusters, unbindDevice
 from Modules.casaia import casaia_pairing
 from Modules.domoCreate import CreateDomoDevice
 from Modules.livolo import livolo_bind
-from Modules.lumi import enableOppleSwitch
+from Modules.lumi import enableOppleSwitch, enable_click_mode_aqara, enable_operation_mode_aqara
 from Modules.manufacturer_code import (PREFIX_MAC_LEN,
                                        PREFIX_MACADDR_WIZER_LEGACY, PREFIX_MACADDR_XIAOMI, PREFIX_MACADDR_OPPLE, )
 from Modules.mgmt_rtg import mgmt_rtg
@@ -669,6 +669,7 @@ def handle_device_specific_needs(self, Devices, NWKID):
         "TS0601-switch",
         "TS0601-2Gangs-switch",
         "TS0601-SmartAir",
+        "TS130F-_TZ3000_1dd0d5yi",
     ):
         self.log.logging("Pairing", "Debug", "Tuya general registration needed")
         tuya_registration(self, NWKID, device_reset=True)
@@ -680,7 +681,10 @@ def handle_device_specific_needs(self, Devices, NWKID):
     elif self.ListOfDevices[NWKID]["Model"] == "SPZB0001":
         thermostat_Calibration(self, NWKID, 0x00)
 
-
+    elif self.ListOfDevices[NWKID]["Model"] == "lumi.remote.b28ac1":
+        enable_click_mode_aqara( self, NWKID )
+        enable_operation_mode_aqara( self, NWKID )
+        
 def scan_device_for_group_memebership(self, NWKID):
     for ep in self.ListOfDevices[NWKID]["Ep"]:
         if "0004" in self.ListOfDevices[NWKID]["Ep"][ep] and self.groupmgt:
