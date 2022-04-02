@@ -26,6 +26,7 @@ import zigpy.zdo
 import zigpy.zdo.types as zdo_types
 from Classes.ZigpyTransport.AppZigate import App_zigate
 from Classes.ZigpyTransport.AppZnp import App_znp
+from Classes.ZigpyTransport.AppDeconz import App_deconz
 from Classes.ZigpyTransport.AppBellows import App_bellows
 from Classes.ZigpyTransport.nativeCommands import NATIVE_COMMANDS_MAPPING, native_commands
 from Classes.ZigpyTransport.plugin_encoders import (
@@ -43,6 +44,7 @@ MAX_CONCURRENT_REQUESTS_PER_DEVICE = 1
 CREATE_TASK = True
 
 def start_zigpy_thread(self):
+    self.zigpy_loop = get_or_create_eventloop()
     self.log.logging("TransportZigpy", "Debug", "start_zigpy_thread - Starting zigpy thread")
     self.zigpy_thread.start()
 
@@ -70,23 +72,53 @@ def zigpy_thread(self):
         "Debug",
         "zigpy_thread -extendedPANID %s %d" % (self.pluginconf.pluginConf["extendedPANID"], extendedPANID),
     )
-    asyncio.run(
-        radio_start(self, self._radiomodule, self._serialPort, set_channel=channel, set_extendedPanId=extendedPANID)
-    )
 
+    task = radio_start(self, self._radiomodule, self._serialPort, set_channel=channel, set_extendedPanId=extendedPANID)
+ 
+    self.zigpy_loop.run_until_complete(task)
+    self.zigpy_loop.run_until_complete(asyncio.sleep(1))
 
+    self.log.logging("TransportZigpy", "Debug", "Check and cancelled any left task (if any)")
+    for not_yet_finished_task  in  asyncio.all_tasks(self.zigpy_loop):
+        self.log.logging("TransportZigpy", "Debug", "         - not yet finished %s" %not_yet_finished_task.get_name())
+        not_yet_finished_task.cancel()
+    self.zigpy_loop.run_until_complete(asyncio.sleep(1))
+
+    self.zigpy_loop.close()
+
+    self.log.logging("TransportZigpy", "Debug", "zigpy_thread - exiting zigpy thread")
+
+def get_or_create_eventloop():
+    try:
+        loop = asyncio.get_event_loop()
+
+    except RuntimeError as ex:
+        if "There is no current event loop in thread" in str(ex):
+            asyncio.new_event_loop()
+     
+    asyncio.set_event_loop( loop )
+    return loop   
+    
 async def radio_start(self, radiomodule, serialPort, auto_form=False, set_channel=0, set_extendedPanId=0):
 
-    self.log.logging("TransportZigpy", "Debug", "In radio_start")
+    self.log.logging("TransportZigpy", "Debug", "In radio_start %s" %radiomodule)
     
     if radiomodule == "ezsp":
         import bellows.config as conf
         config = {conf.CONF_DEVICE: {"path": serialPort, "baudrate": 115200}, conf.CONF_NWK: {}}
-    else:
+        
+    elif radiomodule =="zigate":
+        import zigpy_zigate.config as conf
+        config = {conf.CONF_DEVICE: {"path": serialPort, "baudrate": 115200}, conf.CONF_NWK: {}}
+        
+    elif radiomodule =="znp":
         import zigpy_znp.config as conf
+        config = {conf.CONF_DEVICE: {"path": serialPort, "baudrate": 115200}, conf.CONF_NWK: {}}
+        
+    elif radiomodule =="deCONZ":
+        import zigpy_deconz.config as conf
         config = {conf.CONF_DEVICE: {"path": serialPort}, conf.CONF_NWK: {}}
-
-    
+        
     if set_extendedPanId != 0:
         config[conf.CONF_NWK][conf.CONF_NWK_EXTENDED_PAN_ID] = "%s" % (
             t.EUI64(t.uint64_t(set_extendedPanId).serialize())
@@ -96,8 +128,13 @@ async def radio_start(self, radiomodule, serialPort, auto_form=False, set_channe
 
     if radiomodule == "zigate":
         self.app = App_zigate(config)
+        
     elif radiomodule == "znp":
         self.app = App_znp(config)
+        
+    elif radiomodule == "deCONZ":
+        self.app = App_deconz(conf.CONFIG_SCHEMA(config))
+        
     elif radiomodule == "ezsp":
         self.app = App_bellows(conf.CONFIG_SCHEMA(config))
 
@@ -254,16 +291,23 @@ async def dispatch_command(self, data):
         target_router = None if target_router == "FFFC" else t.EUI64(t.uint64_t(target_router).serialize())
         duration == 0xFE if duration == 0xFF else duration
         self.permit_to_join_timer["Timer"] = time.time()
-        self.permit_to_join_timer["Duration"] = duration
+        self.permit_to_join_timer["Duration"] = duration 
 
         if target_router is None:
-            self.log.logging("TransportZigpy", "Debug", "PERMIT-TO-JOIN: duration: %s" % duration)
-            await self.app.permit(time_s=duration)
+            self.log.logging("TransportZigpy", "Debug", "PERMIT-TO-JOIN: duration: %s for Radio: %s" % (duration, self._radiomodule))
+            if self._radiomodule == "deCONZ":
+                await self.app.permit_ncp( time_s=duration)
+            else:
+                await self.app.permit(time_s=duration)            
         else:
             self.log.logging(
-                "TransportZigpy", "Debug", "PERMIT-TO-JOIN: duration: %s target: %s" % (duration, target_router)
-            )
-            await self.app.permit(time_s=duration, node=target_router)
+                "TransportZigpy", "Debug", "PERMIT-TO-JOIN: duration: %s target: %s" % (duration, target_router))
+            if self._radiomodule == "deCONZ":
+                await self.app.permit_ncp( time_s=duration)  
+            else:
+                await self.app.permit(time_s=duration, node=target_router)
+                
+
 
     elif data["cmd"] == "SET-TX-POWER":
         await self.app.set_zigpy_tx_power(data["datas"]["Param1"])
@@ -285,7 +329,7 @@ async def dispatch_command(self, data):
 
     elif data["cmd"] == "REQ-NWK-STATUS":
         await asyncio.sleep(10)
-        await self.app.load_network_info()
+        #await self.app.load_network_info()
         self.forwarder_queue.put(build_plugin_8009_frame_content(self, self._radiomodule))
 
     elif data["cmd"] == "RAW-COMMAND":
@@ -452,10 +496,26 @@ def log_exception(self, exception, error, cmd, data):
         context=context,
     )
 
+def check_transport_readiness(self):
+    
+    if self._radiomodule == "zigate":
+        return True
 
+    if self._radiomodule == "znp":
+        return self.app._znp is not None
+    
+    if self._radiomodule == "deCONZ":
+        return True
+
+    if self._radiomodule == "ezsp":
+        return True
+        
 async def transport_request( self, destination, Profile, Cluster, sEp, dEp, sequence, payload, expect_reply=True, use_ieee=False ):
     _nwkid = destination.nwk.serialize()[::-1].hex()
     _ieee = str(destination.ieee)
+    if not check_transport_readiness:
+        return
+
     try:
         async with _limit_concurrency(self, destination, sequence):
             if _ieee in self._currently_not_reachable and self._currently_waiting_requests_list[_ieee]:
