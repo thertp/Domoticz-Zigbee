@@ -494,14 +494,16 @@ def Decode0110(self, Devices, MsgData, MsgLQI):  # Write Attribute request
     timeStamped(self, MsgSrcAddr, 0x0110)
     lastSeenUpdate(self, Devices, NwkId=MsgSrcAddr)
 
-    for idx in range(24, len(MsgData), 4):
+    idx = 24
+    while idx < len(MsgData):
         Attribute = MsgData[idx : idx + 4]
         idx += 4
         DataType = MsgData[idx : idx + 2]
         idx += 2
         lendata = MsgData[idx : idx + 4]
         idx += 4
-        DataValue = MsgData[idx : idx + int(lendata) * 2]
+        DataValue = MsgData[idx : idx + int(lendata, 16) * 2]
+        idx += int(lendata, 16) * 2
 
         self.log.logging(
             "Input",
