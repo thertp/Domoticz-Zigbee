@@ -660,11 +660,16 @@ def xy_to_rgb(x, y, brightness=1):
     g = -X * 0.707196 + Y * 1.655397 + Z * 0.036152
     b = X * 0.051713 - Y * 0.121364 + Z * 1.011530
 
-    r = 12.92 * r if r <= 0.0031308 else (1.0 + 0.055) * pow(r, (1.0 / 2.4)) - 0.055
-    g = 12.92 * g if g <= 0.0031308 else (1.0 + 0.055) * pow(g, (1.0 / 2.4)) - 0.055
-    b = 12.92 * b if b <= 0.0031308 else (1.0 + 0.055) * pow(b, (1.0 / 2.4)) - 0.055
+    r = 12.92 * r if r <= 0.0031308 else ((1.0 + 0.055) * pow(r, (1.0 / 2.4)) - 0.055)
+    g = 12.92 * g if g <= 0.0031308 else ((1.0 + 0.055) * pow(g, (1.0 / 2.4)) - 0.055)
+    b = 12.92 * b if b <= 0.0031308 else ((1.0 + 0.055) * pow(b, (1.0 / 2.4)) - 0.055)
 
-    return {"r": round(r * 255, 3), "g": round(g * 255, 3), "b": round(b * 255, 3)}
+    r, g, b = map(lambda c: max(0, c), [r, g, b])
+    max_component = max(r, g, b)
+    if max_component > 1:
+        r, g, b = map(lambda c: c / max_component, [r, g, b])
+
+    return {"r": int(round(r * 255, 0)), "g": int(round(g * 255, 0)), "b": int(round(b * 255, 0))}
 
 
 def rgb_to_hsl(rgb):
