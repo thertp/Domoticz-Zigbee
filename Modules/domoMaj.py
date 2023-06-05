@@ -1158,9 +1158,27 @@ def MajDomoDevice(self, Devices, NWKID, Ep, clusterID, value, Attribute_="", Col
                 "ColorControlFull",
                 "ColorControl",
             ):
-                if Devices[DeviceUnit].nValue != 0 or Devices[DeviceUnit].sValue != "Off":
-                    nValue, sValue = getDimmerLevelOfColor(self, value)
-                    UpdateDevice_v2(self, Devices, DeviceUnit, nValue, str(sValue), BatteryLevel, SignalLevel, Color_)
+                if Attribute_ == "step":
+                    curval = Devices[DeviceUnit].LastLevel
+                    # the step size should come from the command payload...
+                    sValue = curval + (-1 if int(value, 10) else 1)*10
+                    nValue = 1
+                    if sValue < 0:
+                        sValue = 1
+                    if sValue > 100:
+                        sValue = 100
+                    UpdateDevice_v2(self, Devices, DeviceUnit, nValue, str(sValue), BatteryLevel, SignalLevel)
+
+                elif Devices[DeviceUnit].nValue != 0 or Devices[DeviceUnit].sValue != "Off":
+                    # switch to None as default value ?
+                    # if color set, dont change value.
+                    if Color_ != "":
+                        nValue = Devices[DeviceUnit].nValue
+                        sValue = Devices[DeviceUnit].sValue
+                        UpdateDevice_v2(self, Devices, DeviceUnit, nValue, str(sValue), BatteryLevel, SignalLevel, Color_)
+                    else:
+                        nValue, sValue = getDimmerLevelOfColor(self, value)
+                        UpdateDevice_v2(self, Devices, DeviceUnit, nValue, str(sValue), BatteryLevel, SignalLevel)
 
             elif WidgetType in ("LegrandSelector", "LegrandSleepWakeupSelector"):
                 self.log.logging("Widget", "Debug", "------> LegrandSelector : Value -> %s" % value, NWKID)

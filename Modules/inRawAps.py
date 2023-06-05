@@ -15,6 +15,7 @@ from Modules.orvibo import orviboReadRawAPS
 from Modules.philips import philipsReadRawAPS
 from Modules.pollControl import receive_poll_cluster
 from Modules.schneider_wiser import schneiderReadRawAPS
+from Modules.tools import xy_to_rgb
 from Modules.tuya import TUYA_MANUFACTURER_NAME, tuyaReadRawAPS
 
 # Requires Zigate firmware > 3.1d
@@ -139,10 +140,24 @@ def inRawAps(
         return
 
     if cluster == "0300":  # Color Control
-        if Command == "0a":  # Move to Color Temperature
+        if Command == "07": # Move to Color
+            colorX = int(payload[8:10] + payload[6:8],16)/65536
+            colorY = int(payload[12:14] + payload[10:12],16)/65536
+            rgb = xy_to_rgb(colorX, colorY)
+            r = rgb['r']
+            g = rgb['g']
+            b = rgb['b']
+            self.log.logging( "inRawAPS", 'Debug', "inRawAps Move to Color Nwkid: %s ColorX %f (%s) ColorY %f (%s) rgb (%02x,%02x,%02x)" %(
+                srcnwkid, colorX, payload[8:10] + payload[6:8], colorY, payload[12:14] + payload[10:12],r,g,b), srcnwkid  )
+            color='{"m":3,"t":0,"r":%d,"g":%d,"b":%d,"cw":0,"ww":0}' % (r,g,b)
+            MajDomoDevice( self, Devices, srcnwkid, srcep, "0008", '1000', Color_=color)
+        elif Command == "0a": # Move to Color Temperature
             color_temp_mired = payload[8:10] + payload[6:8]
             transition_time = payload[12:14] + payload[10:12]
-            # self.log.logging("inRawAPS","Log","Move to Color Temp - Command: %s Temp_Mired: %s TransitionTime: %s" %(Command, color_temp_mired, transition_time))
+            kelvins = 4000
+            if color_temp_mired != 0:
+                kelvins = int(1000000 / int(color_temp_mired,16))
+            self.log.logging( "inRawAPS", 'Debug', "inRawAps Move to Color Temp - Temp_Mired: %s TransitionTime: %s Kelvin %d" %(color_temp_mired, transition_time, kelvins))
             if "Model" in self.ListOfDevices[srcnwkid] and self.ListOfDevices[srcnwkid]["Model"] == "tint-Remote-white":
                 COLOR_SCENE_WHITE = {
                     "022b": "09",
@@ -155,6 +170,10 @@ def inRawAps(
                 }
                 if color_temp_mired in COLOR_SCENE_WHITE:
                     MajDomoDevice(self, Devices, srcnwkid, srcep, "0008", COLOR_SCENE_WHITE[color_temp_mired])
+            else:
+                color='{"m":2,"t":%d,"r":0,"g":0,"b":0,"cw":0,"ww":0}' % (kelvins)
+                MajDomoDevice( self, Devices, srcnwkid, srcep, "0008", '1000', Color_=color)
+
 
         elif Command == "4b":  # Move Color Temperature
             move_mode = payload[6:8]

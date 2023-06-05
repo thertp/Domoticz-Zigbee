@@ -4129,8 +4129,22 @@ def Decode8085(self, Devices, MsgData, MsgLQI):
         self.log.logging( "Input", "Log", "Decode8085 - Model: %s SQN: %s, Addr: %s, Ep: %s, Cluster: %s, Cmd: %s, Unknown: %s " % (
             _ModelName, MsgSQN, MsgSrcAddr, MsgEP, MsgClusterId, MsgCmd, unknown_), MsgSrcAddr, )
 
-    elif "Manufacturer" in self.ListOfDevices[MsgSrcAddr]:
-        if self.ListOfDevices[MsgSrcAddr]["Manufacturer"] == "1110":  # Profalux
+    elif _ModelName == "ZG2819S-RGBW":
+        cmd, up_down, step_size, transition = extract_info_from_8085(MsgData)
+        self.log.logging(
+            "Input",
+            "Log",
+            "Decode8085 - ZG2819S-RGBW msgdata: %s, cmd: %s, direction: %s, size: %s, transition: %s" % (MsgData, cmd, up_down, step_size, transition),
+            MsgSrcAddr,
+        )
+
+        if MsgCmd == "06":  # Step with on/off
+            if up_down == "01":  # step down
+                MajDomoDevice(self, Devices, MsgSrcAddr, MsgEP, MsgClusterId, "01", Attribute_="step")
+            elif up_down == "00":  # step up
+                MajDomoDevice(self, Devices, MsgSrcAddr, MsgEP, MsgClusterId, "00", Attribute_="step")
+
+    elif "Manufacturer" in self.ListOfDevices[MsgSrcAddr] and self.ListOfDevices[MsgSrcAddr]["Manufacturer"] == "1110":  # Profalux
             self.log.logging("Input", "Log", "MsgData: %s" % MsgData)
 
             TYPE_ACTIONS = {None: "", "03": "stop", "05": "move"}
