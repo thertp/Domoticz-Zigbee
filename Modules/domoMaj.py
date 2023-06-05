@@ -841,6 +841,11 @@ def MajDomoDevice(self, Devices, NWKID, Ep, clusterID, value, Attribute_="", Col
                     sValue = "On"
                 UpdateDevice_v2(self, Devices, DeviceUnit, nValue, sValue, BatteryLevel, SignalLevel)
                 
+            elif ClusterType == 'Switch' and WidgetType == 'TINT_REMOTE_WHITE':
+                nValue = int(value)
+                sValue = nValue * 10
+                UpdateDevice_v2(self, Devices, DeviceUnit, nValue, sValue, BatteryLevel, SignalLevel)
+
             elif WidgetType == "DSwitch":
                 # double switch avec EP different
                 _value = int(value)
@@ -1351,9 +1356,17 @@ def MajDomoDevice(self, Devices, NWKID, Ep, clusterID, value, Attribute_="", Col
                 UpdateDevice_v2(self, Devices, DeviceUnit, nValue, sValue, BatteryLevel, SignalLevel)
 
             elif WidgetType == "TINT_REMOTE_WHITE":
+                self.log.logging( "Widget", "Debug", "------>  TINT Value: %s" %value, NWKID)
                 nValue = int(value)
                 sValue = "%s" % (10 * nValue)
-                UpdateDevice_v2(self, Devices, DeviceUnit, nValue, sValue, BatteryLevel, SignalLevel)
+                force = False
+                if nValue == 4 or nValue == 5:
+                    force = True
+                if nValue == 1000:
+                    self.log.logging( "Widget", "Debug", "------>  TINT Color: %s" %Color_, NWKID)
+                    UpdateDevice_v2(self, Devices, DeviceUnit, 9, "90", BatteryLevel, SignalLevel, Color_=Color_)
+                else:
+                    UpdateDevice_v2(self, Devices, DeviceUnit, nValue, sValue, BatteryLevel, SignalLevel, ForceUpdate_=force)
 
         if ClusterType in (
             "ColorControlRGB",

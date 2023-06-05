@@ -158,7 +158,7 @@ def inRawAps(
             if color_temp_mired != 0:
                 kelvins = int(1000000 / int(color_temp_mired,16))
             self.log.logging( "inRawAPS", 'Debug', "inRawAps Move to Color Temp - Temp_Mired: %s TransitionTime: %s Kelvin %d" %(color_temp_mired, transition_time, kelvins))
-            if "Model" in self.ListOfDevices[srcnwkid] and self.ListOfDevices[srcnwkid]["Model"] == "tint-Remote-white":
+            if "Model" in self.ListOfDevices[srcnwkid] and (self.ListOfDevices[srcnwkid]["Model"] == "tint-Remote-white" or self.ListOfDevices[srcnwkid]["Model"] == "ZBT-Remote-ALL-RGBW"):
                 COLOR_SCENE_WHITE = {
                     "022b": "09",
                     "01dc": "10",
@@ -182,7 +182,7 @@ def inRawAps(
             color_temp_max_mireds = payload[18:20] + payload[16:18]
             # self.log.logging("inRawAPS","Log","Move Color Temperature - Command: %s mode: %s rate: %s min_mired: %s max_mired: %s" %(
             #    Command, move_mode, rate, color_temp_min_mireds, color_temp_max_mireds))
-            if "Model" in self.ListOfDevices[srcnwkid] and self.ListOfDevices[srcnwkid]["Model"] == "tint-Remote-white":
+            if "Model" in self.ListOfDevices[srcnwkid] and (self.ListOfDevices[srcnwkid]["Model"] == "tint-Remote-white" or self.ListOfDevices[srcnwkid]["Model"] == "ZBT-Remote-ALL-RGBW"):
                 if move_mode == "01":  # Down
                     MajDomoDevice(self, Devices, srcnwkid, srcep, "0008", "16")
 
@@ -191,7 +191,7 @@ def inRawAps(
 
         elif Command == "47":  # Stop Move Step
             # self.log.logging("inRawAPS","Log","Stop Move Step - Command: %s" %Command)
-            if "Model" in self.ListOfDevices[srcnwkid] and self.ListOfDevices[srcnwkid]["Model"] == "tint-Remote-white":
+            if "Model" in self.ListOfDevices[srcnwkid] and (self.ListOfDevices[srcnwkid]["Model"] == "tint-Remote-white" or self.ListOfDevices[srcnwkid]["Model"] == "ZBT-Remote-ALL-RGBW"):
                 MajDomoDevice(self, Devices, srcnwkid, srcep, "0008", "18")
 
         else:

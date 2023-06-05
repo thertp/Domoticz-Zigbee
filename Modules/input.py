@@ -4091,7 +4091,7 @@ def Decode8085(self, Devices, MsgData, MsgLQI):
     elif _ModelName in ( "lumi.remote.b686opcn01-bulb", "lumi.remote.b486opcn01-bulb", "lumi.remote.b286opcn01-bulb", ):
         AqaraOppleDecoding(self, Devices, MsgSrcAddr, MsgEP, MsgClusterId, _ModelName, MsgData)
 
-    elif _ModelName == "tint-Remote-white":
+    elif _ModelName == "tint-Remote-white" or _ModelName == "ZBT-Remote-ALL-RGBW":
         #                           Command   Mode   Step   Transtition Time
         # Dim-:      0001 0008 02 e471  02        01     2b     000a
         # Dim+:      0001 0008 02 e471  02        00     2b     000a
